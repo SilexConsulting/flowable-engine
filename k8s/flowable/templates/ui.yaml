@@ -17,6 +17,8 @@ spec:
         app.kubernetes.io/name: {{ .Release.Name }}-{{ include "flowable.template" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      securityContext:
+        fsGroup: 101
       initContainers:
       {{- if .Values.postgres.enabled }}
       - name: check-db-ready
@@ -52,6 +54,8 @@ spec:
         - configMapRef:
             name: {{ .Release.Name }}-{{ include "flowable.template" . }}-configmap
         volumeMounts:
+        - mountPath: /data
+          name: {{ .Release.Name }}-{{ include "flowable.template" . }}
         resources:
 {{ toYaml .Values.ui.resources | indent 10 }}
       {{- if .Values.cloudSql.enabled }}
@@ -69,12 +73,29 @@ spec:
             readOnly: true
       {{- end }}
       volumes:
+      - name: {{ .Release.Name }}-{{ include "flowable.template" . }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-{{ include "flowable.template" . }}
       {{- if .Values.cloudSql.enabled }}
       - name: cloudsql-credentials
         secret:
           secretName: cloudsql-credentials
       {{- end }}
       restartPolicy: Always
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    service: {{ .Release.Name }}-{{ include "flowable.template" . }}
+  name: {{ .Release.Name }}-{{ include "flowable.template" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.ui.storage.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.ui.storage.size }}
 ---
 apiVersion: v1
 kind: Service

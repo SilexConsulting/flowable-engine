@@ -45,6 +45,9 @@ ui:
     limits:
       cpu: "1"
       memory: "1Gi"
+  storage:
+    storageClassName: "standard"
+    size: "1Gi"
   javaOpts: "-Xmx1g -Xms1g"
   admin:
     username: admin
